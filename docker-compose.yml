@@ -1,0 +1,150 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: ./compose/local/django/Dockerfile
+      args:
+        - DEV=true
+    image: comptrends-scraper
+    container_name: comptrends-scraper
+    networks:
+      - comptrends_network
+      # '/start' is the shell script used to run the service
+    command: /start
+    # this volume is used to map the files and folders on the host to the container
+    # so if we change code on the host, code in the docker container will also be changed
+    volumes:
+      - ./backend:/backend
+    ports:
+      - 8010:8000
+    # env_file is used to manage the env variables of our project
+    env_file:
+      - .env-dev
+    depends_on:
+      - comptrends-rabbitmq
+      - comptrends-redis
+      - comptrends-db
+      - comptrends-chrome
+
+  comptrends-db:
+    image: postgres:15-alpine
+    container_name: comptrends-db
+    networks:
+      - comptrends_network
+    volumes:
+      - comptrends-db-dev:/var/lib/postgresql/data/
+    environment:
+      - POSTGRES_DB=hello_django
+      - POSTGRES_USER=hello_django
+      - POSTGRES_PASSWORD=hello_django
+
+  comptrends-rabbitmq:
+    image: rabbitmq:3.11-alpine
+    container_name: comptrends-rabbitmq
+    networks:
+      - comptrends_network
+    volumes:
+      - comptrends-rabbitmq-data:/var/lib/rabbitmq
+    environment:
+      - RABBITMQ_DEFAULT_USER=admin
+      - RABBITMQ_DEFAULT_PASS=mypass
+    ports:
+      # Expose the port for the worker to add/get tasks
+      - 5672:5672
+      # OPTIONAL: Expose the GUI port
+      - 15672:15672
+
+  comptrends-redis:
+    image: redis:7-alpine
+    container_name: comptrends-redis
+    networks:
+      - comptrends_network
+    volumes:
+      - ./redis-data:/data
+
+  comptrends-worker:
+    build:
+      context: .
+      dockerfile: ./compose/local/django/Dockerfile
+    image: comptrends-worker
+    container_name: comptrends-worker
+    networks:
+      - comptrends_network
+    command: /start-celeryworker
+    volumes:
+      - ./backend:/backend
+    env_file:
+      - .env-dev
+    depends_on:
+      - comptrends-rabbitmq
+      - comptrends-redis
+      - comptrends-db
+
+  comptrends-beat:
+    build:
+      context: .
+      dockerfile: ./compose/local/django/Dockerfile
+    image: comp-beat
+    container_name: comp-beat
+    networks:
+      - comptrends_network
+    command: /start-celerybeat
+    volumes:
+      - ./backend:/backend
+    env_file:
+      - .env-dev
+    depends_on:
+      - comptrends-rabbitmq
+      - comptrends-redis
+      - comptrends-db
+
+  comptrends-flower:
+    build:
+      context: .
+      dockerfile: ./compose/local/django/Dockerfile
+    image: comptrends-flower
+    container_name: comptrends-flower
+    networks:
+      - comptrends_network
+    command: /start-flower
+    volumes:
+      - ./backend:/backend
+    env_file:
+      - .env-dev
+    ports:
+      - 5557:5555
+    depends_on:
+      - comptrends-rabbitmq
+      - comptrends-redis
+      - comptrends-db
+
+  comptrends-chrome:
+    image: "selenium/standalone-chrome:latest"
+    container_name: comptrends-chrome
+    environment:
+      - SE_VNC_NO_PASSWORD=1
+      - SE_NODE_OVERRIDE_MAX_SESSIONS=true
+      - SE_NODE_MAX_SESSIONS=6
+    networks:
+      - comptrends_network
+    hostname: comptrends-chrome
+    shm_size: '2gb'
+    restart: always
+    ports:
+      - "4444:4444"
+
+volumes:
+  comptrends-db-dev:
+  redis-data:
+  comptrends-rabbitmq-data:
+
+
+networks:
+  comptrends_network:
+    name: comptrends_network
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 192.168.94.0/24
