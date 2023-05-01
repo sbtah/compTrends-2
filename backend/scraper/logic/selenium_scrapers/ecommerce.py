@@ -1,10 +1,5 @@
-import time
-from typing import List, Union, Iterator, Callable, Tuple
-from scraper.helpers.randoms import (
-    random_sleep_medium,
-    random_sleep_small,
-    random_sleep_long,
-)
+from typing import Callable, Iterator, List, Tuple, Union
+
 from lxml.html import HtmlElement
 from scraper.logic.selenium_scrapers.base import BaseSeleniumScraper
 
@@ -37,6 +32,11 @@ class EcommerceSeleniumScraper(BaseSeleniumScraper):
         """
         raise NotImplementedError
 
+
+    def visit_page(self, url) -> HtmlElement:
+        """"""
+        pass
+
     def close_cookies_banner(self, html_element: HtmlElement) -> None:
         """
         Finds Cookies Policy in provided HtmlElement and closes it.
@@ -63,7 +63,7 @@ class EcommerceSeleniumScraper(BaseSeleniumScraper):
             if element is not None:
                 self.logger.info("Found critical popup element. Closing.")
                 self.move_and_click(selenium_element=element)
-                random_sleep_small()
+                self.random_sleep_small()
             else:
                 pass
 

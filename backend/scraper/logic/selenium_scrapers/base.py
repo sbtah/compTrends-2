@@ -1,29 +1,24 @@
+import time
 from datetime import datetime
+from random import choice, randint
 from typing import List, Union
 
 from lxml.html import HtmlElement, HTMLParser, fromstring
-from scraper.helpers.randoms import (
-    get_random_user_agent,
-    random_sleep_medium,
-    random_sleep_small
-)
 from scraper.options.settings import USER_AGENTS
 from selenium import webdriver
 from selenium.common.exceptions import (
     ElementClickInterceptedException,
     ElementNotVisibleException,
-    NoSuchElementException,
+    NoSuchElementException
 )
-
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.remote.webelement import WebElement
+from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import Select
+from selenium.webdriver.support.wait import WebDriverWait
 from utilities.logger import logger
-
 
 
 class BaseSeleniumScraper:
@@ -46,9 +41,46 @@ class BaseSeleniumScraper:
             self.driver.delete_all_cookies()
             self.driver.quit()
 
+    @staticmethod
+    def get_random_user_agent(user_agent_list: List[str]) -> str:
+        """
+        Return str with random User-Agent.
+        - :arg user_agent_list: List of strings with User Agents.
+        """
+        agent = choice(user_agent_list)
+        return agent
+
+    @staticmethod
+    def random_sleep_small() -> None:
+        """Custom sleep function that sleeps from 1 to 3 seconds"""
+        value = randint(1, 3)
+        logger.debug(f"random_sleep_small for {value} seconds")
+        return time.sleep(value)
+
+    @staticmethod
+    def random_sleep_medium() -> None:
+        """Custom sleep function that sleeps from 3 to 6 seconds"""
+        value = randint(3, 6)
+        logger.debug(f"random_sleep_small for {value} seconds")
+        return time.sleep(value)
+
+    @staticmethod
+    def random_sleep_long() -> None:
+        """Custom sleep function that sleeps from 6 to 8 seconds"""
+        value = randint(6, 8)
+        logger.debug(f"random_sleep_mediuml for {value} seconds")
+        return time.sleep(value)
+
+    @staticmethod
+    def random_sleep_deep() -> None:
+        """Custom sleep function that sleeps from 15 to 20 seconds"""
+        value = randint(15, 20)
+        logger.debug(f"random_sleep_large for {value} seconds")
+        return time.sleep(value)
+
     @property
     def user_agent(self) -> str:
-        agent = get_random_user_agent(USER_AGENTS)
+        agent = self.get_random_user_agent(USER_AGENTS)
         return agent
 
     @property
@@ -105,7 +137,7 @@ class BaseSeleniumScraper:
         try:
             self.driver.get(url)
             self.logger.info(f"Requesting: {url}")
-            random_sleep_small()
+            self.random_sleep_small()
             return True
         except Exception as e:
             self.logger.error(f"(selenium_get) Exception: {e}")
@@ -199,10 +231,10 @@ class BaseSeleniumScraper:
         - :arg selenium_element: Located Webelement to move to.
         """
         self.move_to_element(selenium_element=selenium_element)
-        random_sleep_small()
+        self.random_sleep_small()
         self.click(selenium_element)
         self.logger.debug("Successfully clicked on specified element.")
-        random_sleep_medium()
+        self.random_sleep_medium()
 
     def find_selenium_element(
         self,
@@ -510,7 +542,7 @@ class BaseSeleniumScraper:
                 selenium_element.clear()
                 selenium_element.send_keys(text)
                 selenium_element.send_keys(Keys.ENTER)
-                random_sleep_small()
+                self.random_sleep_small()
                 self.logger.info(
                     f"Successfully sent text: '{text}' to desired element.",
                 )
@@ -526,7 +558,7 @@ class BaseSeleniumScraper:
                     selenium_element.clear()
                     selenium_element.send_keys(text)
                     selenium_element.send_keys(Keys.ENTER)
-                    random_sleep_small()
+                    self.random_sleep_small()
                     self.logger.info(
                         f"Successfully sent text: '{text}' to desired element.", # noqa
                     )
