@@ -15,8 +15,8 @@ class BaseApiScraper:
     def __init__(self, logger=logger):
         self.logger = logger
 
-    @classmethod
-    def get_random_user_agent(cls, user_agent_list: List[str]) -> str:
+    @staticmethod
+    def get_random_user_agent(user_agent_list: List[str]) -> str:
         """
         Return str with random User-Agent.
         - :arg user_agent_list: List of strings with User Agents.

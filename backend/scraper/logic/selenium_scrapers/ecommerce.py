@@ -62,7 +62,7 @@ class EcommerceSeleniumScraper(BaseSeleniumScraper):
             )
             if element is not None:
                 self.logger.info("Found critical popup element. Closing.")
-                element.click()
+                self.move_and_click(selenium_element=element)
                 random_sleep_small()
             else:
                 pass

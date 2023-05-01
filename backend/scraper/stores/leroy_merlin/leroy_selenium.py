@@ -3,7 +3,7 @@ from scraper.logic.selenium_scrapers.ecommerce import EcommerceSeleniumScraper
 
 class LeroyMerlinSeleniumScraper(EcommerceSeleniumScraper):
     """
-    Scraper for Leroy Merlin store.
+    Selenium based Scraper for Leroy Merlin store.
     """
 
     def __init__(self, *args, **kwargs):

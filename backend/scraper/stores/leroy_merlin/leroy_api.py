@@ -3,7 +3,9 @@ from scraper.logic.api_scrapers.api_scraper import ApiScraper
 
 
 class LeroyMerlinApiScraper(ApiScraper):
-    """"""
+    """
+    Api Scraper for Leroy Merlin store.
+    """
 
     all_stores_endpoint = "https://www.leroymerlin.pl/www/ajax/shop/all.html"
     single_product_for_store = "https://www.leroymerlin.pl/www/ajax/productStockAndPrice.html?instalments=true&productId={}&store={}"

@@ -15,7 +15,7 @@ class ApiScraper(BaseApiScraper):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    @classmethod
+    @staticmethod
     def generate_ids_map(step: int) -> Iterator[int]:
         """
         Return generator of generators.
