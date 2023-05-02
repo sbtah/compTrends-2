@@ -54,28 +54,28 @@ class BaseSeleniumScraper:
     def random_sleep_small() -> None:
         """Custom sleep function that sleeps from 1 to 3 seconds"""
         value = randint(1, 3)
-        logger.debug(f"random_sleep_small for {value} seconds")
+        logger.debug(f"Small sleep for: {value} seconds")
         return time.sleep(value)
 
     @staticmethod
     def random_sleep_medium() -> None:
         """Custom sleep function that sleeps from 3 to 6 seconds"""
         value = randint(3, 6)
-        logger.debug(f"random_sleep_small for {value} seconds")
+        logger.debug(f"Medium sleep for: {value} seconds")
         return time.sleep(value)
 
     @staticmethod
     def random_sleep_long() -> None:
         """Custom sleep function that sleeps from 6 to 8 seconds"""
         value = randint(6, 8)
-        logger.debug(f"random_sleep_mediuml for {value} seconds")
+        logger.debug(f"Long sleep for: {value} seconds")
         return time.sleep(value)
 
     @staticmethod
     def random_sleep_deep() -> None:
         """Custom sleep function that sleeps from 15 to 20 seconds"""
         value = randint(15, 20)
-        logger.debug(f"random_sleep_large for {value} seconds")
+        logger.debug(f"Deep sleep for: {value} seconds")
         return time.sleep(value)
 
     @property
@@ -233,7 +233,7 @@ class BaseSeleniumScraper:
         self.move_to_element(selenium_element=selenium_element)
         self.random_sleep_small()
         self.click(selenium_element)
-        self.logger.debug("Successfully clicked on specified element.")
+        self.logger.info("Successfully moved and clicked on specified element.")
         self.random_sleep_medium()
 
     def find_selenium_element(
