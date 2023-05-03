@@ -1,5 +1,5 @@
 from typing import Callable, Iterator, List, Tuple, Union
-
+from datetime import datetime
 from lxml.html import HtmlElement
 from scraper.logic.selenium_scrapers.base import BaseSeleniumScraper
 
@@ -9,8 +9,10 @@ class EcommerceSeleniumScraper(BaseSeleniumScraper):
     General Ecommerce scraper.
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, requested_url, store_url, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.requested_url = requested_url
+        self.store_url = store_url
 
     @property
     def potenial_popups_xpaths(self) -> List[str]:
@@ -29,6 +31,46 @@ class EcommerceSeleniumScraper(BaseSeleniumScraper):
         """
         Xpath to element that will return text value,
         for currently picked Local Store.
+        """
+        raise NotImplementedError
+
+    def categories_map(self) -> dict:
+        """
+        Dictionary that will map category structure of store.
+
+        - :category_xpath:
+            Xpath that returns list of Category HtmlElements or Webelements.
+        - :category_parser:
+            Callable that will extract URL and Name for Product.
+        Should return dict with schema like:
+        {
+            "0": {
+                "category_xpath": str,
+                "category_parser": callable,
+            },
+        }
+        Where Keys 0 - 2 implies Category level.
+        """
+        raise NotImplementedError
+
+    def products_map(self) -> dict:
+        """
+        Dictionary that will map product structure of store on Category page.
+        If for instance Category of level 0 have products,
+        then we define product_xpath that leads to Product element.
+
+        - :product_xpath:
+            Xpath that returns list of Product HtmlElements or Webelements.
+        - :product_parser:
+            Callable that will extract URL and Name for Product.
+        Should return dict with schema like:
+        {
+            "0": {
+                "product_xpath": str,
+                "product_parser": callable,
+            },
+        }
+        Where Keys 0 - 2 implies Category level.
         """
         raise NotImplementedError
 
@@ -66,7 +108,9 @@ class EcommerceSeleniumScraper(BaseSeleniumScraper):
             )
             self.logger.info("Successfully closed cookies policy banner.")
         except Exception as e:
-            self.logger.error(f"(close_cookies_banner) Some other Exception")
+            self.logger.error(
+                f"(close_cookies_banner) Some other Exception: {e}"
+            )
 
     def close_popups_elements_on_error(self) -> None:
         """
@@ -141,23 +185,62 @@ class EcommerceSeleniumScraper(BaseSeleniumScraper):
         """
         raise NotImplementedError
 
+    def find_category_elements(
+            self,
+            category_level: int,
+            html_element: HtmlElement,
+        ) -> Union[Iterator[Tuple[str, str]], None]:
+        """
+        Looks for Category Elements in given HtmlElement.
+        Return generator of tuples with URL/Name of Categories.
+
+        - :arg category_level:
+            Level of Category, used to get data from categories_map.
+        - :arg html_element: Lxml HtmlElement to process.
+        """
+        # Get category map.
+        categories_map = self.categories_map()
+        # Get list of elements
+        categories_list = self.find_all_elements(
+                html_element=html_element,
+                xpath_to_search=categories_map.get(f'{category_level}').get("category_xpath"), # noqa
+            )
+        return self.extract_urls_with_names(
+            list_of_elements=categories_list,
+            custom_parser=categories_map.get(f'{category_level}').get("category_parser"), # noqa
+        )
+
+    def find_products_elements(
+            self,
+            category_level: int,
+            html_element: HtmlElement,
+        ) -> Union[Iterator[Tuple[str, str]], None]:
+        """"""
+        pass
+
     def extract_urls_with_names(
             self,
             list_of_elements: list,
-            custom_parser: Callable
-        ) -> Union[Iterator[Tuple], None]:
+            custom_parser: Callable,
+        ) -> Union[Iterator[Tuple[str, str]], None]:
         """
         Takes list of HtmlElements or Webelements
         and returns generator of tuples with urls and names.
 
         - :arg list_of_elements:
+            List of HtmlElements or Selenium Webelement to process.
+        - :arg custom_parser:
+            Method that will be used to extract URL/Name
+            from single given element.
         """
         if isinstance(list_of_elements, list):
             assert len(list_of_elements) > 0, "Received an empty list, Nothing to extract." # noqa
             try:
                 return (custom_parser(element) for element in list_of_elements)
             except Exception as e:
-                self.logger.error(f"(extract_urls_with_names) Some other exception.")
+                self.logger.error(
+                    f"(extract_urls_with_names) Some other exception: {e}"
+                )
                 return None
         else:
             self.logger.error(
@@ -165,195 +248,22 @@ class EcommerceSeleniumScraper(BaseSeleniumScraper):
             )
             raise TypeError
 
-    def extract_urls_with_names_old(
-        self,
-        html_element,
-        xpath_to_search,
-        parser_used=None,
-        extract_with_selenium=False,
-    ):
-        """
-        Used in discovery of WebPages Elements on current page.
-        Finds all Urls and 'Names' in given HtmlElements.
-        Returns generator of tuples, containing (url, name).
-        :param xpath_to_search: - Xpath that should return list of HtmlElements
-            or SeleniumWebElements.
-        :param parser_used: - class method that will extract needed data,
-            (URL, Name) from each element in list.
-        :param extract_with_selenium: - Default to False means,
-            that parsing will expect to work on HtmlElements, while True means,
-            that parser have to deal with Selenium Web Element.
-        """
-        if extract_with_selenium == False:
-            categories_list = self.find_all_elements(
-                html_element=html_element,
-                xpath_to_search=xpath_to_search,
-            )
-        else:
-            categories_list = self.find_selenium_elements(
-                xpath_to_search=xpath_to_search,
-            )
-
-        if categories_list:
-            self.logger.info(
-                f"URLS/Names list created, returned {len(categories_list)} elements."  # noqa
-            )
-            if extract_with_selenium == False:
-                return (
-                    parser_used(HtmlElement=x, SeleniumWebElement=None)
-                    for x in categories_list
-                )
-            else:
-                return (
-                    parser_used(SeleniumWebElement=x, HtmlElement=None)
-                    for x in categories_list
-                )
-        else:
-            self.logger.info(f"Failed loading URLS/Names list from HTML,")
-            return None
-
-    def find_all_category_pages(
-        self,
-        html_element,
-        category_level=1,
-        parser_used=None,
-        extract_with_selenium=False,
-    ):
-        """
-        Given then HtmlElement.
-        Return generator of tuples for CategoryPage: (url, name).
-        self.categories_discovery_xpath_dict have to be configured,
-            with CategoryPage related xpathses.
-        self.categories_discovery_xpath_dict keys are implying CategoryPage level,
-            where Root/Main CategoryPage is 1 while childs are 2, 3, 4 and so on.
-        :param parser_used:
-        :param extract_with_selenium:
-            - If set to true data will be extracted with Selenium,
-                instead of lxml.
-        """
-        if (
-            self.categories_discovery_xpath_dict.get(category_level)
-            and parser_used is not None
+    def find_product_pages_for_all_pages_selenium(
+            self, category_level=1, parser_used=None, extract_with_selenium=False
         ):
-            categories = self.extract_urls_with_names(
-                html_element=html_element,
-                xpath_to_search=self.categories_discovery_xpath_dict[category_level][
-                    "category_element_xpath"
-                ],
-                parser_used=parser_used,
-                extract_with_selenium=extract_with_selenium,
-            )
-            return categories
-        else:
-            self.logger.error(
-                "(find_all_category_pages) Missing critical Xpathses or CategoryPage parser. Quiting."
-            )
-            self.do_cleanup()
-            return None
-
-    def find_all_product_elements(
-        self,
-        html_element,
-        category_level=1,
-        parser_used=None,
-        extract_with_selenium=False,
-    ):
-        """
-        Given then HtmlElement.
-        Return generator of tuples for ProductPage: (url, name).
-        self.products_discovery_xpath_dict have to be configured,
-            with ProductPage related xpathses.
-        Sometimes products can be displayed differently on different CategoryPage.
-        :param category_level: is used here to link ProductPages Xpathses with proper category.
-        For instance: If child category (level=2) is displaying product data, then we fetch
-            self.products_discovery_xpath_dict for key '2' in dictionary of Xpathses.
-        :param extract_with_selenium:
-            - If set to true data will be extracted with Selenium,
-                instead of lxml.
-        """
-        if (
-            self.products_discovery_xpath_dict.get(category_level)
-            and parser_used is not None
-        ):
-            products = self.extract_urls_with_names(
-                html_element=html_element,
-                xpath_to_search=self.products_discovery_xpath_dict[category_level][
-                    "product_url_xpath"
-                ],
-                parser_used=parser_used,
-                extract_with_selenium=extract_with_selenium,
-            )
-            return products
-        else:
-            self.logger.error(
-                "(find_all_product_pages) Missing critical Xpathses or ProductPage parser. Quiting."
-            )
-            self.do_cleanup()
-            return None
-
-    def find_product_elements_for_all_pages_selenium(
-        self, category_level=1, parser_used=None, extract_with_selenium=False
-    ):
-        """
-        Parses all products for all pages on specified ProductPage.
-        Relies on Selenium since it's only clicking next page button.
-        To work you need to configure:
-        self.products_discovery_xpath_dict
-        Returns a generator of tuples with ProductPage data: (url, name).
-        """
-        if parser_used is not None:
-            current_page = 1
-            element = self.generate_html_element()
-            current_page_number_from_xpath = self.find_all_elements(
-                html_element=element,
-                # Current page Xpath
-                xpath_to_search=self.products_discovery_xpath_dict[category_level]["product_current_page_xpath"],
-                ignore_not_found_errors=True,
-            )
-            self.logger.info(
-                f"Current page; XPath: {current_page_number_from_xpath[0].text_content().strip() if current_page_number_from_xpath != None else 1} Counted: {current_page}"
-            )
-
-            products = self.find_all_product_pages(
-                html_element=element,
-                category_level=category_level,
-                parser_used=parser_used,
-                extract_with_selenium=extract_with_selenium,
-            )
-
-            if products is not None:
-                for prod in products:
-                    yield prod
-            else:
-                self.logger.error(
-                    f"(find_all_product_pages) Returned: '{products}' Products at URL: {self.url} - Quiting."
-                )
-                pass
-
-            next_page_button = self.find_selenium_element(
-                # Next Page Xpath
-                xpath_to_search=self.products_discovery_xpath_dict[category_level][
-                    "product_next_page_button_xpath"
-                ],
-                ignore_not_found_errors=True,
-            )
-            while next_page_button is not None:
-
-                self.logger.info(f"Found another product page, proceeding.")
-                self.initialize_html_element(next_page_button)
-                next_page_button = self.find_selenium_element(
-                    # Next Page Xpath
-                    xpath_to_search=self.products_discovery_xpath_dict[category_level][
-                        "product_next_page_button_xpath"
-                    ],
-                    ignore_not_found_errors=True,
-                )
-
-                current_page += 1
-                new_element = self.parse_driver_response()
+            """
+            Parses all products for all pages on specified ProductPage.
+            Relies on Selenium since it's only clicking next page button.
+            To work you need to configure:
+            self.products_discovery_xpath_dict
+            Returns a generator of tuples with ProductPage data: (url, name).
+            """
+            if parser_used is not None:
+                current_page = 1
+                element = self.generate_html_element()
                 current_page_number_from_xpath = self.find_all_elements(
-                    html_element=new_element,
-                    # Current Page Xpath
+                    html_element=element,
+                    # Current page Xpath
                     xpath_to_search=self.products_discovery_xpath_dict[category_level][
                         "product_current_page_xpath"
                     ],
@@ -369,6 +279,7 @@ class EcommerceSeleniumScraper(BaseSeleniumScraper):
                     parser_used=parser_used,
                     extract_with_selenium=extract_with_selenium,
                 )
+
                 if products is not None:
                     for prod in products:
                         yield prod
@@ -378,45 +289,58 @@ class EcommerceSeleniumScraper(BaseSeleniumScraper):
                     )
                     pass
 
-            else:
-                self.logger.info(
-                    "Next page element not found. Parsing products - finished."
+                next_page_button = self.find_selenium_element(
+                    # Next Page Xpath
+                    xpath_to_search=self.products_discovery_xpath_dict[category_level][
+                        "product_next_page_button_xpath"
+                    ],
+                    ignore_not_found_errors=True,
                 )
-        else:
-            self.logger.error("Missing ProductPage parser - Quiting.")
-            self.do_cleanup()
+                while next_page_button is not None:
 
+                    self.logger.info(f"Found another product page, proceeding.")
+                    self.initialize_html_element(next_page_button)
+                    next_page_button = self.find_selenium_element(
+                        # Next Page Xpath
+                        xpath_to_search=self.products_discovery_xpath_dict[category_level][
+                            "product_next_page_button_xpath"
+                        ],
+                        ignore_not_found_errors=True,
+                    )
 
+                    current_page += 1
+                    new_element = self.parse_driver_response()
+                    current_page_number_from_xpath = self.find_all_elements(
+                        html_element=new_element,
+                        # Current Page Xpath
+                        xpath_to_search=self.products_discovery_xpath_dict[category_level][
+                            "product_current_page_xpath"
+                        ],
+                        ignore_not_found_errors=True,
+                    )
+                    self.logger.info(
+                        f"Current page; XPath: {current_page_number_from_xpath[0].text_content().strip() if current_page_number_from_xpath != None else 1} Counted: {current_page}"
+                    )
 
-    @property
-    def categories_discovery_xpath_dict(self):
-        """
-        Dictionary of needed Xpaths and settings for discoverying CategoryPages.
-        CategoryPages can have other Categories as a childs.
-        Main (root) Categories are mapped to 1 while childs are 2, 3, 4 and so on.
-        - :param category_element_xpath: Must return list of Elements to parse.
-        return {
-            1: {
-                "category_element_xpath": None,
-            },
-        }
-        """
-        raise NotImplementedError
+                    products = self.find_all_product_pages(
+                        html_element=element,
+                        category_level=category_level,
+                        parser_used=parser_used,
+                        extract_with_selenium=extract_with_selenium,
+                    )
+                    if products is not None:
+                        for prod in products:
+                            yield prod
+                    else:
+                        self.logger.error(
+                            f"(find_all_product_pages) Returned: '{products}' Products at URL: {self.url} - Quiting."
+                        )
+                        pass
 
-    @property
-    def products_discovery_xpath_dict(self):
-        """
-        Dictionary of needed Xpaths and settings for discoverying ProductPages.
-        ProductsPages are mapped to CategoryPage level by key.
-        - :param product_url_xpath: Must return list of Elements to parse.
-        return {
-            1: {
-                "product_url_xpath": "",
-                "product_next_page_button_xpath": "",
-                "product_current_page_xpath": "",
-                "product_last_page_xpath": "",
-                "product_previous_page_xpath": "",
-            },
-        }
-        """
-        raise NotImplementedError
+                else:
+                    self.logger.info(
+                        "Next page element not found. Parsing products - finished."
+                    )
+            else:
+                self.logger.error("Missing ProductPage parser - Quiting.")
+                self.do_cleanup()

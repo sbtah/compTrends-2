@@ -3,4 +3,4 @@
 set -o errexit
 set -o nounset
 
-celery -A core worker -l INFO --concurrency=10
+celery -A core worker -l INFO --autoscale=10,0 --concurrency=6
