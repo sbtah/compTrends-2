@@ -7,13 +7,10 @@ from scraper.stores.leroy_merlin.leroy_merlin import LeroyMerlinScraper
 
 
 scraper = LeroyMerlinScraper(
-    requested_url="https://www.leroymerlin.pl/relaks-w-ogrodzie/camping-biwak,a2434.html",
+    requested_url="https://www.leroymerlin.pl/",
     store_url="https://www.leroymerlin.pl/"
 )
 
 element = scraper.visit_page(url=scraper.requested_url)
-# scraper.pick_local_store_by_name()
-genex = scraper.find_category_elements(category_level=3, html_element=element)
-for cat in genex:
-    print(cat)
-scraper.quit_and_clean()
+store_button = scraper.find_selenium_element(xpath_to_search=scraper.cookies_close_xpath)
+print(scraper.extract_text(element=store_button))

@@ -154,28 +154,79 @@ class BaseSeleniumScraper:
                   parser=hp,
                 )
             self.logger.debug(
-                f"Parsing page source to HtmlElement at: {self.driver.current_url}"
+                f"Parsing page source to HtmlElement at: {self.driver.current_url}" # noqa
             )
             return element
         except Exception as e:
             self.logger.error(f"Exception while generating HtmlElement: {e}")
             return None
 
-    # def extract_attribute(
-    #         self,
-    #         element: Union[HtmlElement, WebElement, str],
-    #         attribute,
-    #     ) -> str:
-    #     """
-    #     Extract specified attribute from given Element.
-    #     Looks for type of given element and works accordingly to this type.
-    #     """
-    #     if isinstance(element, HtmlElement):
-    #         attr = element.get(f"{attribute}")
-    #     elif isinstance(element, WebElement):
-    #         attr = element.get(f"{attribute}")
-    #     elif isinstance(element, str):
-    #         pass
+    def extract_attribute(
+            self,
+            element: Union[HtmlElement, WebElement, str],
+            attribute: str,
+        ) -> str:
+        """
+        Extracts specified attribute from given Element.
+        Looks for type of given element and works accordingly to this type.
+        This can help to work with both:
+            selenium WebElements and lxml HtmlElements.
+
+        - :arg element:
+            Can be HtmlElement, WebElement or str.
+        - :arg attribute:
+            String representing argument we want to extract from element.
+        """
+        if element is not None:
+            if isinstance(element, list):
+                self.logger.error(
+                    '(extract_attribute) Received list instead of a proper element. Quiting.' # noqa
+                )
+                raise ValueError
+            elif isinstance(element, HtmlElement):
+                attr = element.get(f"{attribute}")
+            elif isinstance(element, WebElement):
+                attr = element.get_attribute(f"{attribute}")
+            elif isinstance(element, str):
+                attr = element
+            return attr
+        else:
+            self.logger.error(
+                '(extract_attribute) Received no element. Quiting.'
+            )
+            raise ValueError
+
+    def extract_text(
+            self,
+            element: Union[HtmlElement, WebElement, str],
+        ) -> str:
+        """
+        Extracts text from given Element.
+        Looks for type of given element and works accordingly to this type.
+        This can help to work with both:
+            selenium WebElements and lxml HtmlElements.
+
+        - :arg element:
+            Can be HtmlElement, WebElement or str.
+        """
+        if element is not None:
+            if isinstance(element, list):
+                self.logger.error(
+                    '(extract_text) Received list instead of a proper element. Quiting.' # noqa
+                )
+                raise ValueError
+            elif isinstance(element, HtmlElement):
+                attr = element.text
+            elif isinstance(element, WebElement):
+                attr = element.get_attribute("textContent")
+            elif isinstance(element, str):
+                attr = element
+            return attr
+        else:
+            self.logger.error(
+                '(extract_text) Received no element. Quiting.'
+            )
+            raise ValueError
 
     def quit_and_clean(self) -> None:
         """
