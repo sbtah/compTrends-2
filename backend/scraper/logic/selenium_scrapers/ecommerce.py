@@ -1,6 +1,7 @@
-from typing import Callable, Iterator, List, Tuple, Union
+from typing import Callable, Iterator, List, Tuple, Union, Dict
 from datetime import datetime
 from lxml.html import HtmlElement
+from selenium.webdriver.remote.webelement import WebElement
 from scraper.logic.selenium_scrapers.base import BaseSeleniumScraper
 
 
@@ -34,7 +35,7 @@ class EcommerceSeleniumScraper(BaseSeleniumScraper):
         """
         raise NotImplementedError
 
-    def categories_map(self) -> dict:
+    def categories_discovery_map(self) -> dict:
         """
         Dictionary that will map category structure of store.
 
@@ -43,17 +44,28 @@ class EcommerceSeleniumScraper(BaseSeleniumScraper):
         - :category_parser:
             Callable that will extract URL and Name for Product.
         Should return dict with schema like:
+        - :has_childs:
+            True if Category have child Categories.
+        - :has_products:
+            True if Category have products to scrape.
+        - :use_webelements: If set to True we will return Category elements as
+            Selenium's Webelements. Otherwise we will work on HtmlElements.
+
         {
             "0": {
                 "category_xpath": str,
                 "category_parser": callable,
+                "has_childs": bool,
+                "has_products": bool,
+                "use_webelements": bool,
             },
         }
+
         Where Keys 0 - 2 implies Category level.
         """
         raise NotImplementedError
 
-    def products_map(self) -> dict:
+    def products_discovery_map(self) -> dict:
         """
         Dictionary that will map product structure of store on Category page.
         If for instance Category of level 0 have products,
@@ -185,11 +197,11 @@ class EcommerceSeleniumScraper(BaseSeleniumScraper):
         """
         raise NotImplementedError
 
-    def find_category_elements(
+    def find_category_data(
             self,
             category_level: int,
             html_element: HtmlElement,
-        ) -> Union[Iterator[Tuple[str, str]], None]:
+        ) -> Union[Iterator[Dict], None]:
         """
         Looks for Category Elements in given HtmlElement.
         Return generator of tuples with URL/Name of Categories.
@@ -198,55 +210,95 @@ class EcommerceSeleniumScraper(BaseSeleniumScraper):
             Level of Category, used to get data from categories_map.
         - :arg html_element: Lxml HtmlElement to process.
         """
+        self.logger.info(f"Discovery process for Categories of level: {category_level} started.") # noqa
         # Get category map.
-        categories_map = self.categories_map()
-        # Get list of elements
-        categories_list = self.find_all_elements(
-                html_element=html_element,
-                xpath_to_search=categories_map.get(f'{category_level}').get("category_xpath"), # noqa
+        categories_map = self.categories_discovery_map()
+        # Get list of Webelements or HtmlElements.
+        elements_type = categories_map[f"{category_level}"]["use_webelements"]
+        if elements_type == True:
+            # Using Webelements.
+            self.logger.info('Looking for Webelements for Categories.')
+            categories_list = self.find_selenium_elements(
+                # categories_map[f'{category_level}']["category_xpath"]
+                xpath_to_search=categories_map[f'{category_level}']["category_xpath"], # noqa
             )
-        return self.extract_urls_with_names(
-            list_of_elements=categories_list,
-            custom_parser=categories_map.get(f'{category_level}').get("category_parser"), # noqa
-        )
+        elif elements_type == False:
+            # Or HtmlElements.
+            self.logger.info('Looking for HtmlElements for Categories.')
+            categories_list = self.find_all_elements(
+                    html_element=html_element,
+                    xpath_to_search=categories_map[f'{category_level}']["category_xpath"], # noqa
+                )
+        else:
+            self.logger.error(
+                "(find_category_data) Error while getting 'use_webelements'. Quiting." # noqa
+            )
+            raise ValueError
+        if categories_list:
+            self.logger.info(
+                f"Successfully found: {len(categories_list)} Categories elements. Processing."
+            )
+            return self.prepare_category_discovery_data(
+                list_of_elements=categories_list,
+                custom_parser=categories_map[f'{category_level}']["category_parser"], # noqa
+                has_childs=categories_map[f'{category_level}']["has_childs"],
+                has_products=categories_map[f'{category_level}']["has_products"], # noqa
+            )
+        else:
+            self.logger.error(
+                f"Searching for Category elements failed. Quiting."
+            )
+            self.make_screenshot()
+            raise ValueError
 
-    def find_products_elements(
+    # TODO
+    # SOME IDEA...
+    def prepare_category_discovery_data(
+            self,
+            list_of_elements: List[Union[WebElement, HtmlElement]],
+            custom_parser: Callable,
+            has_childs: bool,
+            has_products: bool,
+        ) -> Union[Iterator[Dict], None]:
+        """
+        Takes list of HtmlElements or Webelements
+        and returns generator of dictionaries with prepared data containing:
+            urls, names, has_childs, has_products for Category.
+
+        - :arg list_of_elements:
+            List of HtmlElements or Selenium Webelement to process.
+        - :arg custom_parser:
+            Method that will be used to extract URL/Name,
+            from single given element.
+            Should return dict with,
+            "url": value_for_url, "name": value_for_name.
+        - :arg has_childs: True or False, should be set in:
+            categories_discovery_map property.
+        - :arg has_products: True or False, should be set in:
+            categories_discovery_map property.
+        """
+        if isinstance(list_of_elements, list):
+            assert len(list_of_elements) > 0, "Received an empty list, Nothing to extract." # noqa
+            try:
+                return ({**custom_parser(element), "has_childs":has_childs, "has_products": has_products} for element in list_of_elements) # noqa
+            except Exception as e:
+                self.logger.error(
+                    f"(prepare_category_discovery_data) Some other exception: {e}"
+                )
+                return None
+        else:
+            self.logger.error(
+                f"(prepare_category_discovery_data) Argument received for list of elements should be of type list. Received: {type(list_of_elements)}" # noqa
+            )
+            raise TypeError
+
+    def find_products_data(
             self,
             category_level: int,
             html_element: HtmlElement,
         ) -> Union[Iterator[Tuple[str, str]], None]:
         """"""
         pass
-
-    def extract_urls_with_names(
-            self,
-            list_of_elements: list,
-            custom_parser: Callable,
-        ) -> Union[Iterator[Tuple[str, str]], None]:
-        """
-        Takes list of HtmlElements or Webelements
-        and returns generator of tuples with urls and names.
-
-        - :arg list_of_elements:
-            List of HtmlElements or Selenium Webelement to process.
-        - :arg custom_parser:
-            Method that will be used to extract URL/Name
-            from single given element.
-        """
-        if isinstance(list_of_elements, list):
-            assert len(list_of_elements) > 0, "Received an empty list, Nothing to extract." # noqa
-            try:
-                return (custom_parser(element) for element in list_of_elements)
-            except Exception as e:
-                self.logger.error(
-                    f"(extract_urls_with_names) Some other exception: {e}"
-                )
-                return None
-        else:
-            self.logger.error(
-                f"(extract_urls_with_names) Argument received should be list. Received: {type(list_of_elements)}" # noqa
-            )
-            raise TypeError
 
     def find_product_pages_for_all_pages_selenium(
             self, category_level=1, parser_used=None, extract_with_selenium=False
@@ -261,7 +313,7 @@ class EcommerceSeleniumScraper(BaseSeleniumScraper):
             if parser_used is not None:
                 current_page = 1
                 element = self.generate_html_element()
-                current_page_number_from_xpath = self.find_all_elements(
+                current_page_number_from_xpath = self.find_element(
                     html_element=element,
                     # Current page Xpath
                     xpath_to_search=self.products_discovery_xpath_dict[category_level][
@@ -344,3 +396,36 @@ class EcommerceSeleniumScraper(BaseSeleniumScraper):
             else:
                 self.logger.error("Missing ProductPage parser - Quiting.")
                 self.do_cleanup()
+
+
+
+#     def extract_urls_with_names(
+#             self,
+#             list_of_elements: list,
+#             custom_parser: Callable,
+#         ) -> Union[Iterator[Tuple[str, str]], None]:
+#         """
+#         Takes list of HtmlElements or Webelements
+#         and returns generator of tuples with urls and names.
+#  
+#         - :arg list_of_elements:
+#             List of HtmlElements or Selenium Webelement to process.
+#         - :arg custom_parser:
+#             Method that will be used to extract URL/Name
+#             from single given element.
+#             Should return dict with "url": value, "name": value.
+#         """
+#         if isinstance(list_of_elements, list):
+#             assert len(list_of_elements) > 0, "Received an empty list, Nothing to extract." # noqa
+#             try:
+#                 return (custom_parser(element) for element in list_of_elements)
+#             except Exception as e:
+#                 self.logger.error(
+#                     f"(extract_urls_with_names) Some other exception: {e}"
+#                 )
+#                 return None
+#         else:
+#             self.logger.error(
+#                 f"(extract_urls_with_names) Argument received should be list. Received: {type(list_of_elements)}" # noqa
+#             )
+#             raise TypeError

@@ -19,6 +19,10 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import Select
 from selenium.webdriver.support.wait import WebDriverWait
 from utilities.logger import logger
+# Local Testing dependencies
+from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver import DesiredCapabilities
 
 
 class BaseSeleniumScraper:
@@ -92,38 +96,53 @@ class BaseSeleniumScraper:
 
         if self._driver is None:
             options = webdriver.ChromeOptions()
-            options.add_argument("--width=1920")
-            options.add_argument("--height=1080")
-            options.add_argument(f"user-agent={self.user_agent}")
 
-            options.add_argument("--no-sandbox")
-            options.add_argument("--single-process")
-            options.add_argument("--disable-dev-shm-usage")
-            options.add_argument("--incognito")
+            # options.add_argument("--no-sandbox")
+            # options.add_argument("--single-process")
+            # options.add_argument("--disable-dev-shm-usage")
+            # options.add_argument("--incognito")
+            # options.add_argument("--width=2560")
+            # options.add_argument("--height=1440")
+            # options.add_argument("--disable-blink-features")
+            # options.add_argument("--disable-infobars")
+            # options.add_argument("--ignore-ssl-errors=yes")
+            # options.add_argument("--ignore-certificate-errors")
+            # options.add_argument("--start-maximized")
+            # self._driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})") # noqa
+
             # TODO:
             # Call get_random_proxy to use different proxy server on each request..
             # self.options.add_argument('--proxy-server=176.9.220.108:8080')
 
-            options.add_argument("--disable-blink-features")
-            options.add_argument(
-                "--disable-blink-features=AutomationControlled"
-            )
-            options.add_argument("--disable-infobars")
-            options.add_argument("--ignore-ssl-errors=yes")
-            options.add_argument("--ignore-certificate-errors")
-            # Deprecated ?
-            options.add_experimental_option("useAutomationExtension", False)
+            # User Agent
+            options.add_argument(f"--user-agent={self.user_agent}")
+
+            # Bypass Bot detection
             options.add_experimental_option(
                 "excludeSwitches", ["enable-automation"],
             )
-            options.add_argument("--start-maximized")
-
-            self._driver = webdriver.Remote(
-                command_executor="http://comptrends-chrome:4444/wd/hub",
-                options=options,
+            options.add_experimental_option("useAutomationExtension", False)
+            options.add_argument(
+                "--disable-blink-features=AutomationControlled"
             )
-            self._driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})") # noqa
-            self._driver.implicitly_wait(5)
+
+            # Remote
+            # self._driver = webdriver.Remote(
+            #     command_executor="http://comptrends-chrome:4444/wd/hub",
+            #     options=options,
+            #     desired_capabilities=DesiredCapabilities.CHROME,
+            # )
+
+            # Locally installed browser just for testing.
+            self._driver = webdriver.Chrome(
+                service=Service(ChromeDriverManager().install()),
+                options=options,
+                desired_capabilities=DesiredCapabilities.CHROME,
+            )
+
+            self._driver.set_window_size("2560", "1440")
+            self._driver.implicitly_wait(10)
+            self.logger.info(f'{self._driver.path}')
 
         return self._driver
 
@@ -216,7 +235,9 @@ class BaseSeleniumScraper:
                 )
                 raise ValueError
             elif isinstance(element, HtmlElement):
-                attr = element.text
+                attr = element.text.strip()
+                if len(attr) == 0:
+                    attr = element.text_content().strip()
             elif isinstance(element, WebElement):
                 attr = element.get_attribute("textContent")
             elif isinstance(element, str):
@@ -227,6 +248,10 @@ class BaseSeleniumScraper:
                 '(extract_text) Received no element. Quiting.'
             )
             raise ValueError
+
+    def make_screenshot(self):
+        self.driver.save_screenshot(f"'{self.current_url}'.png")
+
 
     def quit_and_clean(self) -> None:
         """
