@@ -1,0 +1,9 @@
+celery
+Django
+flower
+httpx
+lxml
+psycopg2
+redis
+selenium
+webdriver-manager
