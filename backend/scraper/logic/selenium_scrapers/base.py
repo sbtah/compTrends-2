@@ -58,21 +58,21 @@ class BaseSeleniumScraper:
     def random_sleep_small() -> None:
         """Custom sleep function that sleeps from 1 to 3 seconds"""
         value = randint(1, 3)
-        logger.debug(f"Small sleep for: {value} seconds")
+        logger.debug(f"Small sleep for: {value} seconds.")
         return time.sleep(value)
 
     @staticmethod
     def random_sleep_medium() -> None:
         """Custom sleep function that sleeps from 3 to 6 seconds"""
         value = randint(3, 6)
-        logger.debug(f"Medium sleep for: {value} seconds")
+        logger.debug(f"Medium sleep for: {value} seconds.")
         return time.sleep(value)
 
     @staticmethod
     def random_sleep_long() -> None:
         """Custom sleep function that sleeps from 6 to 8 seconds"""
         value = randint(6, 8)
-        logger.debug(f"Long sleep for: {value} seconds")
+        logger.debug(f"Long sleep for: {value} seconds.")
         return time.sleep(value)
 
     @staticmethod
@@ -81,6 +81,12 @@ class BaseSeleniumScraper:
         value = randint(15, 20)
         logger.debug(f"Deep sleep for: {value} seconds")
         return time.sleep(value)
+
+    @staticmethod
+    def wait(seconds) -> None:
+        """Custom sleep function that sleeps for specified amount of seconds"""
+        logger.debug(f"Waiting for: {seconds} seconds.")
+        return time.sleep(seconds)
 
     @property
     def user_agent(self) -> str:
@@ -139,14 +145,12 @@ class BaseSeleniumScraper:
                 options=options,
                 desired_capabilities=DesiredCapabilities.CHROME,
             )
-
             self._driver.set_window_size("2560", "1440")
             self._driver.implicitly_wait(10)
-            self.logger.info(f'{self._driver.path}')
 
         return self._driver
 
-    def selenium_get(self, url: str) -> Union[True, None]:
+    def selenium_get(self, url: str) -> Union[bool, None]:
         """
         Requests specified url.
         Returns True on success.
@@ -179,79 +183,6 @@ class BaseSeleniumScraper:
         except Exception as e:
             self.logger.error(f"Exception while generating HtmlElement: {e}")
             return None
-
-    def extract_attribute(
-            self,
-            element: Union[HtmlElement, WebElement, str],
-            attribute: str,
-        ) -> str:
-        """
-        Extracts specified attribute from given Element.
-        Looks for type of given element and works accordingly to this type.
-        This can help to work with both:
-            selenium WebElements and lxml HtmlElements.
-
-        - :arg element:
-            Can be HtmlElement, WebElement or str.
-        - :arg attribute:
-            String representing argument we want to extract from element.
-        """
-        if element is not None:
-            if isinstance(element, list):
-                self.logger.error(
-                    '(extract_attribute) Received list instead of a proper element. Quiting.' # noqa
-                )
-                raise ValueError
-            elif isinstance(element, HtmlElement):
-                attr = element.get(f"{attribute}")
-            elif isinstance(element, WebElement):
-                attr = element.get_attribute(f"{attribute}")
-            elif isinstance(element, str):
-                attr = element
-            return attr
-        else:
-            self.logger.error(
-                '(extract_attribute) Received no element. Quiting.'
-            )
-            raise ValueError
-
-    def extract_text(
-            self,
-            element: Union[HtmlElement, WebElement, str],
-        ) -> str:
-        """
-        Extracts text from given Element.
-        Looks for type of given element and works accordingly to this type.
-        This can help to work with both:
-            selenium WebElements and lxml HtmlElements.
-
-        - :arg element:
-            Can be HtmlElement, WebElement or str.
-        """
-        if element is not None:
-            if isinstance(element, list):
-                self.logger.error(
-                    '(extract_text) Received list instead of a proper element. Quiting.' # noqa
-                )
-                raise ValueError
-            elif isinstance(element, HtmlElement):
-                attr = element.text.strip()
-                if len(attr) == 0:
-                    attr = element.text_content().strip()
-            elif isinstance(element, WebElement):
-                attr = element.get_attribute("textContent")
-            elif isinstance(element, str):
-                attr = element
-            return attr
-        else:
-            self.logger.error(
-                '(extract_text) Received no element. Quiting.'
-            )
-            raise ValueError
-
-    def make_screenshot(self):
-        self.driver.save_screenshot(f"'{self.current_url}'.png")
-
 
     def quit_and_clean(self) -> None:
         """
@@ -325,14 +256,17 @@ class BaseSeleniumScraper:
         self.move_to_element(selenium_element=selenium_element)
         self.random_sleep_small()
         self.click(selenium_element)
-        self.logger.info("Successfully moved and clicked on specified element.")
+        self.logger.info(
+            "Successfully moved and clicked on specified element."
+        )
         self.random_sleep_medium()
+
 
     def find_selenium_element(
         self,
         xpath_to_search: str,
         ignore_not_found_errors: bool=False,
-        wait: int=5,
+        wait: int=3,
     ) -> Union[WebElement, None]:
         """
         Used with Selenium driver.
@@ -344,17 +278,16 @@ class BaseSeleniumScraper:
             Can be set to True to not produce error logs,
             when element is not found.
         - :arg wait: Seconds to wait until the element is present.
-            Default value is: 5 seconds.
+            Default value is: 2 seconds.
         """
         try:
             self.logger.debug(
-                f"(find_selenium_element) Looking for element, waiting {wait} seconds." # noqa
+                f"(find_selenium_element) Looking for WebElement, waiting {wait} seconds." # noqa
             )
-            element = WebDriverWait(self.driver, wait).until(
-                EC.presence_of_element_located((By.XPATH, xpath_to_search))
-            )
+            self.wait(seconds=wait)
+            element = self.driver.find_element(By.XPATH, xpath_to_search)
             self.logger.debug(
-                f"(find_selenium_element) Successfully returned an element."
+                f"(find_selenium_element) Successfully returned an element." # noqa
             )
             return element
         except ElementNotVisibleException:
@@ -405,7 +338,7 @@ class BaseSeleniumScraper:
         self,
         xpath_to_search: str,
         ignore_not_found_errors: bool=False,
-        wait: int=5,
+        wait: int=3,
     )-> Union[List[WebElement], None]:
         """
         Used with Selenium driver.
@@ -417,14 +350,16 @@ class BaseSeleniumScraper:
             Can be set to True to not produce error logs,
             when elements are not found.
         - :arg wait: Seconds to wait until the element is present.
-            Default value is: 5 seconds.
+            Default value is: 2 seconds.
         """
         try:
             self.logger.debug(
                 f"(find_selenium_elements) Looking for elements, waiting {wait} seconds." # noqa
             )
-            elements = WebDriverWait(self.driver, wait).until(
-                EC.presence_of_element_located((By.XPATH, xpath_to_search))
+            self.wait(seconds=wait)
+            elements = self.driver.find_elements(
+                By.XPATH,
+                xpath_to_search,
             )
             self.logger.debug(
                 f"(find_selenium_elements) Successfully returned: {len(elements)} elements." # noqa
@@ -437,7 +372,9 @@ class BaseSeleniumScraper:
             if ignore_not_found_errors:
                 return None
             else:
-                self.logger.error(f"Selenium element not found.")
+                self.logger.error(
+                    f"(find_selenium_elements) Selenium elements not found. Is the Xpath ok?" # noqa
+                )
                 return None
         except Exception as e:
             self.logger.error(
@@ -449,7 +386,7 @@ class BaseSeleniumScraper:
             self,
             html_element: HtmlElement,
             xpath_to_search: str
-        ) -> Union[True, None]:
+        ) -> Union[bool, None]:
         """
         Needs lxml's HtmlElement as an argument.
         Looks for single! object within provided HTMLElement.
@@ -566,7 +503,7 @@ class BaseSeleniumScraper:
     def initialize_html_element(
             self,
             selenium_element: WebElement
-        ) -> Union[True, None]:
+        ) -> Union[bool, None]:
         """
         Used with Selenium driver.
         Initialize a part of content that is loaded on click.
@@ -620,7 +557,7 @@ class BaseSeleniumScraper:
             self,
             text: str,
             selenium_element: WebElement
-        ) -> Union[True, None]:
+        ) -> Union[bool, None]:
         """
         Takes Selenium Element as an input, sends specified text to it.
         Returns True on success.

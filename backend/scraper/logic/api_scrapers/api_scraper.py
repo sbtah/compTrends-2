@@ -109,6 +109,8 @@ class ApiScraper(BaseApiScraper):
         """
         Sends requests to
         SINGLE_PRODUCT_BY_ID_FOR_STORE_ID endpoint asynchronously.
+        Asks for single product data for each local store provided by:
+        :arg iterator_of_stores_id:
 
         - :arg product_id: Integer (ID) of Product.
         - :arg single_product_by_id_for_store_id_url: Api URL
@@ -141,6 +143,8 @@ class ApiScraper(BaseApiScraper):
         """
         Sends requests to
         SINGLE_PRODUCT_BY_ID_FOR_STORE_ID endpoint asynchronously.
+        Asks for data for all products specified in:
+        :arg iterator_of_product_ids:
 
         - :arg store_id: Integer (ID) of LocalStore.
         - :arg single_product_by_id_for_store_id_url: Api URL
