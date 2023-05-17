@@ -25,6 +25,7 @@ class Task(models.Model):
     class Meta:
         abstract = True
 
+
 class CrawlLocalStores(Task):
     '''Class for CrawlLocalStores Task object.'''
 
@@ -35,8 +36,13 @@ class CrawlLocalStores(Task):
         choices=Type.choices,
         default=Type.stores_crawl,
     )
+
+    class Meta:
+        verbose_name_plural = 'CrawlLocalStores Tasks'
+
     def __str__(self):
         return f'{self.type}: {self.url}'
+
 
 class CrawlCategories(Task):
     '''Class for CrawlCategories task object.'''
@@ -51,8 +57,12 @@ class CrawlCategories(Task):
     )
     category_level = models.IntegerField()
 
+    class Meta:
+        verbose_name_plural = 'CrawlCategories Tasks'
+
     def __str__(self):
         return f'{self.type}: {self.url}'
+
 
 class CrawlProducts(Task):
     '''Class for CrawlProducts task object.'''
@@ -67,8 +77,12 @@ class CrawlProducts(Task):
     )
     category_level = models.IntegerField()
 
+    class Meta:
+        verbose_name_plural = 'CrawlProducts Tasks'
+
     def __str__(self):
         return f'{self.type}: {self.url}'
+
 
 class ScrapeProduct(Task):
     '''Class for ScrapeProduct task objects.'''
@@ -82,8 +96,12 @@ class ScrapeProduct(Task):
         default=Type.product_scrape,
     )
 
+    class Meta:
+        verbose_name_plural = 'ScrapeProducts Tasks'
+
     def __str__(self):
         return f'{self.type}: {self.url}'
+
 
 class ScrapeLocalProductData(Task):
     '''Class for ScrapeLocalProductData task objects.'''
@@ -96,6 +114,9 @@ class ScrapeLocalProductData(Task):
         choices=Type.choices,
         default=Type.product_local_scrape,
     )
+
+    class Meta:
+        verbose_name_plural = 'ScrapeLocalProductData Tasks'
 
     def __str__(self):
         return f'{self.type}: {self.url}'
