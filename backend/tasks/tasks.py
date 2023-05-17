@@ -2,7 +2,8 @@ import time
 
 from celery import shared_task
 from objects.models.stores import EcommerceStore
-from objects.models.tasks import CrawlCategories
+from objects.models.tasks import Task
+from utilities.logger import logger
 
 
 # TODO:
@@ -31,12 +32,14 @@ def create_initial_discovery_tasks(self):
     active_stores = EcommerceStore.objects.filter(is_active=True)
     for store in active_stores:
         created = int(time.time())
-        task = CrawlCategories.objects.create(
-            store=store,
-            url=store.discovery_url,
-            status='CREATED',
-            type='CRAWL',
-            category_level=0,
-            created=created
-            )
-    return task.id
+        try:
+            task = Task.objects.create(
+                store=store,
+                url=store.discovery_url,
+                type='CATEGORIES-CRAWL',
+                category_level=0,
+                created=created
+                )
+            logger.info(f'Successfully Created Task with ID: {task.id}')
+        except Exception as e:
+            logger.error(f'(create_initial_discovery_tasks) Exception: {e}')
