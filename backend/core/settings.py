@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from celery.schedules import crontab
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -27,6 +28,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'core',
+    'objects',
+    'tasks',
 ]
 
 MIDDLEWARE = [
@@ -128,6 +131,6 @@ CELERY_TASK_DEFAULT_QUEUE = "default"
 # CELERY_BEAT_SCHEDULE = {
 #     'create_initial_discovery_tasks': {
 #         'task': 'create_initial_discovery_tasks',
-#         'schedule': 45.0,
+#         'schedule': crontab(minute="*"),
 #     }
 # }
