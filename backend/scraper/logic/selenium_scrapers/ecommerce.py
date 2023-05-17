@@ -12,7 +12,6 @@ class EcommerceSeleniumScraper(BaseSeleniumScraper):
     def __init__(self, requested_url, store_url, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.requested_url = requested_url
-        self.store_url = store_url
 
     @property
     def potenial_popups_xpaths(self) -> List[str]:

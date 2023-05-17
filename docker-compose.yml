@@ -86,8 +86,8 @@ services:
     build:
       context: .
       dockerfile: ./compose/local/django/Dockerfile
-    image: comp-beat
-    container_name: comp-beat
+    image: comptrends-beat
+    container_name: comptrends-beat
     networks:
       - comptrends_network
     command: /start-celerybeat
@@ -126,8 +126,8 @@ services:
     environment:
       - SE_VNC_NO_PASSWORD=1
       - SE_NODE_OVERRIDE_MAX_SESSIONS=true
-      - SE_NODE_MAX_INSTANCES=6
-      - SE_NODE_MAX_SESSIONS=6
+      - SE_NODE_MAX_INSTANCES=12
+      - SE_NODE_MAX_SESSIONS=12
     networks:
       - comptrends_network
     hostname: comptrends-chrome

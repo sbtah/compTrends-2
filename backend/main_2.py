@@ -7,7 +7,7 @@ from urllib.parse import urlsplit
 import time
 import re
 from scraper.stores.leroy_merlin.leroy_merlin import LeroyMerlinScraper
-
+from utilities.loader import ScraperLoader
 
 # 'app-platform': 'new.leroymerlin.pl'
 #url = "https://new.leroymerlin.pl/microservices/proxy-api-service/v1/catalog/search-products-filters?node=156&searchView=false&spellcheck=false"
@@ -21,10 +21,6 @@ from scraper.stores.leroy_merlin.leroy_merlin import LeroyMerlinScraper
 #    print('new')
 
 
-with LeroyMerlinScraper(requested_url='https://www.leroymerlin.pl/izolacja-budynkow/kleje-uszczelniacze-izolacje/tasmy-uszczelniajace-do-wnetrz,a1491.html', store_url="https://www.leroymerlin.pl/") as scraper:
-    res_el = scraper.visit_page(url=scraper.requested_url)
-    element = scraper.find_element(html_element=res_el, xpath_to_search='.//ul[@class="menu-list"]/li[contains(@class, "mega-world-item")]')
-    print(element)
-    print(element.text_content())
-    extracted = scraper.extract_text(element=element)
-    print(extracted)
+loader = ScraperLoader(package='leroy_merlin', module_name='leroy_merlin', class_name='LeroyMerlinScraper')
+scraper = loader.import_scraper()
+print(scraper)

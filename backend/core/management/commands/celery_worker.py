@@ -25,7 +25,7 @@ def restart_celery():
             pass
 
     subprocess.call(
-        shlex.split(f"{celery_worker_cmd} --loglevel=info --autoscale-10,1 --concurrency=12") # noqa
+        shlex.split(f"{celery_worker_cmd} --loglevel=info --autoscale=12,1 --concurrency=12") # noqa
     )
 
 

@@ -4,6 +4,7 @@ Used for local testing.
 import time
 import re
 from scraper.stores.leroy_merlin.leroy_merlin import LeroyMerlinScraper
+from backend.operator.task import TaskOperator
 
 
 # URL for lvl 1 discovery
@@ -373,6 +374,29 @@ url_3 = [
 {'url': 'https://www.leroymerlin.pl/uprawa-i-ochrona-roslin/agrowlokniny-folie-siatki-ochronne,a70.html', 'name': 'Agrowłókniny, folie, siatki ochronne', 'category_id': 70, 'has_childs': True, 'has_products': False},
 {'url': 'https://www.leroymerlin.pl/uprawa-i-ochrona-roslin/przetworstwo-warzyw-i-owocow,a72.html', 'name': 'Przetwórstwo warzyw i owoców', 'category_id': 72, 'has_childs': True, 'has_products': False},
 ]
+
+
+
+## BASE TASK TEST
+# tasker = BaseTask()
+# scraper = tasker.start_scraper(package='leroy_merlin', module_name='leroy_merlin', class_name='LeroyMerlinScraper')
+# with scraper(requested_url="https://www.new.leroymerlin.pl/", store_url="https://www.leroymerlin.pl/") as scr:
+#     element = scr.visit_page(url=scr.requested_url)
+#     generator = scr.find_categories_data(category_level=0, html_element=element)
+#     for cat in generator:
+#         print(cat)
+#     scr.quit_and_clean()
+
+## LOADER TEST
+loader = TaskOperator()
+scraper = loader.load_scraper()
+with scraper(requested_url="https://www.new.leroymerlin.pl/") as scr:
+    element = scr.visit_page(url=scr.requested_url)
+    generator = scr.find_categories_data(category_level=0, html_element=element)
+    for cat in generator:
+        print(cat)
+    scr.quit_and_clean()
+
 # FIND CATEGORIES 0
 # print('!!!!! STARTING CATS 0 !!!!!')
 # scraper = LeroyMerlinScraper(
@@ -399,18 +423,18 @@ url_3 = [
 #     scraper.quit_and_clean()
 
 # FIND CATEGORIES 2
-print('!!!!! STARTING CATS 2 !!!!!')
-for dict in url_2:
-    scraper = LeroyMerlinScraper(
-        requested_url=dict['url'],
-        store_url="https://www.leroymerlin.pl/"
-    )
-    element = scraper.visit_page(url=scraper.requested_url)
-    generator = scraper.find_categories_data(category_level=2, html_element=element)
+# print('!!!!! STARTING CATS 2 !!!!!')
+# for dict in url_2:
+#     scraper = LeroyMerlinScraper(
+#         requested_url=dict['url'],
+#         store_url="https://www.leroymerlin.pl/"
+#     )
+#     element = scraper.visit_page(url=scraper.requested_url)
+#     generator = scraper.find_categories_data(category_level=2, html_element=element)
 
-    for cat in generator:
-        print(cat)
-    scraper.quit_and_clean()
+#     for cat in generator:
+#         print(cat)
+#     scraper.quit_and_clean()
 
 
 # #FIND CATEGORIES 3

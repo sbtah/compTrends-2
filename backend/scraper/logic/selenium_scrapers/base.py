@@ -133,18 +133,18 @@ class BaseSeleniumScraper:
             )
 
             # Remote
-            # self._driver = webdriver.Remote(
-            #     command_executor="http://comptrends-chrome:4444/wd/hub",
-            #     options=options,
-            #     desired_capabilities=DesiredCapabilities.CHROME,
-            # )
-
-            # Locally installed browser just for testing.
-            self._driver = webdriver.Chrome(
-                service=Service(ChromeDriverManager().install()),
+            self._driver = webdriver.Remote(
+                command_executor="http://comptrends-chrome:4444/wd/hub",
                 options=options,
                 desired_capabilities=DesiredCapabilities.CHROME,
             )
+
+            # Locally installed browser just for testing.
+            # self._driver = webdriver.Chrome(
+            #     service=Service(ChromeDriverManager().install()),
+            #     options=options,
+            #     desired_capabilities=DesiredCapabilities.CHROME,
+            # )
             self._driver.set_window_size("2560", "1440")
             self._driver.implicitly_wait(10)
 
