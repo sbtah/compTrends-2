@@ -1,6 +1,4 @@
 from django.db import models
-from django.db.models.signals import post_save
-from django.dispatch import receiver
 
 
 class EcommerceStore(models.Model):
@@ -32,12 +30,3 @@ class LocalStore(models.Model):
 
     def __str__(self):
         return f'{self.parrent_store.name}: {self.name}'
-
-
-@receiver(post_save, sender=EcommerceStore)
-def create_category_from_path_pre_save(sender, instance, *args, **kwargs):
-    """Create category parrent id from category path."""
-    if instance.category_path:
-        instance.parrent_category_from_path = int(
-            instance.category_path.split("/")[-2],
-        )
