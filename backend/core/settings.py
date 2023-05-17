@@ -128,9 +128,9 @@ CELERY_RESULT_BACKEND = os.environ.get("CELERY_BACKEND", "redis://127.0.0.1:6379
 CELERY_TASK_DEFAULT_QUEUE = "default"
 
 
-# CELERY_BEAT_SCHEDULE = {
-#     'create_initial_discovery_tasks': {
-#         'task': 'create_initial_discovery_tasks',
-#         'schedule': crontab(minute="*"),
-#     }
-# }
+CELERY_BEAT_SCHEDULE = {
+    'create_initial_discovery_tasks': {
+        'task': 'create_initial_discovery_tasks',
+        'schedule': crontab(hour=20, minute=56),
+    }
+}
