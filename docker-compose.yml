@@ -1,151 +1,177 @@
 version: '3.8'
 
 services:
-  backend:
+  scraper:
     build:
       context: .
-      dockerfile: ./compose/local/django/Dockerfile
+      dockerfile: ./compose/local/scraper/Dockerfile
       args:
         - DEV=true
-    image: comptrends-scraper
-    container_name: comptrends-scraper
+    image: comp-scraper
+    container_name: comp-scraper
     networks:
-      - comptrends_network
+      - comp-network
       # '/start' is the shell script used to run the service
     command: /start
     # this volume is used to map the files and folders on the host to the container
     # so if we change code on the host, code in the docker container will also be changed
     volumes:
-      - ./backend:/backend
+      - ./scraper:/scraper
     ports:
       - 8010:8000
     # env_file is used to manage the env variables of our project
     env_file:
       - .env-dev
     depends_on:
-      - comptrends-rabbitmq
-      - comptrends-redis
-      - comptrends-db
-      - comptrends-chrome
-
-  comptrends-db:
-    image: postgres:15.3
-    container_name: comptrends-db
+      - comp-rabbitmq
+      - comp-redis
+      - tasks-db
+      - comp-chrome
+  api:
+    build:
+      context: .
+      dockerfile: ./compose/local/api/Dockerfile
+      args:
+        - DEV=true
+    image: comp-api
+    container_name: comp-api
     networks:
-      - comptrends_network
+      - comp-network
+    command: /start
     volumes:
-      - comptrends-db-dev:/var/lib/postgresql/data/
+      - ./api:/api
+    ports:
+      - 8020:8000
+    # env_file is used to manage the env variables of our project
+    env_file:
+      - .env-dev
+    depends_on:
+      - products-db
+  tasks-db:
+    image: postgres:15.3
+    container_name: tasks-db
+    networks:
+      - comp-network
+    volumes:
+      - tasks-db-dev:/var/lib/postgresql/data/
+    ports:
+      - 25432:5432
     environment:
       - POSTGRES_DB=hello_django
       - POSTGRES_USER=hello_django
       - POSTGRES_PASSWORD=hello_django
-
-  comptrends-rabbitmq:
-    image: rabbitmq:3.11-alpine
-    container_name: comptrends-rabbitmq
+  products-db:
+    image: postgres:15.3
+    container_name: products-db
     networks:
-      - comptrends_network
+      - comp-network
     volumes:
-      - comptrends-rabbitmq-data:/var/lib/rabbitmq
+      - products-db-dev:/var/lib/postgresql/data/
+    ports:
+      - 15432:5432
+    environment:
+      - POSTGRES_DB=products
+      - POSTGRES_USER=products
+      - POSTGRES_PASSWORD=products
+  comp-rabbitmq:
+    image: rabbitmq:3.11-alpine
+    container_name: comp-rabbitmq
+    networks:
+      - comp-network
+    volumes:
+      - comp-rabbitmq-data:/var/lib/rabbitmq
     environment:
       - RABBITMQ_DEFAULT_USER=admin
       - RABBITMQ_DEFAULT_PASS=mypass
     ports:
-      # Expose the port for the worker to add/get tasks
       - 5672:5672
-      # OPTIONAL: Expose the GUI port
       - 15672:15672
-
-  comptrends-redis:
+  comp-redis:
     image: redis:7-alpine
-    container_name: comptrends-redis
+    container_name: comp-redis
     networks:
-      - comptrends_network
+      - comp-network
     volumes:
-      - ./redis-data:/data
-
-  comptrends-worker:
+      - ./comp-redis-data:/data
+  comp-worker:
     build:
       context: .
-      dockerfile: ./compose/local/django/Dockerfile
-    image: comptrends-worker
-    container_name: comptrends-worker
+      dockerfile: ./compose/local/scraper/Dockerfile
+    image: comp-worker
+    container_name: comp-worker
     networks:
-      - comptrends_network
+      - comp-network
     command: /start-celeryworker
     volumes:
-      - ./backend:/backend
+      - ./scraper:/scraper
     env_file:
       - .env-dev
     depends_on:
-      - comptrends-rabbitmq
-      - comptrends-redis
-      - comptrends-db
-
-  comptrends-beat:
+      - comp-rabbitmq
+      - comp-redis
+      - tasks-db
+  comp-beat:
     build:
       context: .
-      dockerfile: ./compose/local/django/Dockerfile
-    image: comptrends-beat
-    container_name: comptrends-beat
+      dockerfile: ./compose/local/scraper/Dockerfile
+    image: comp-beat
+    container_name: comp-beat
     networks:
-      - comptrends_network
+      - comp-network
     command: /start-celerybeat
     volumes:
-      - ./backend:/backend
+      - ./scraper:/scraper
     env_file:
       - .env-dev
     depends_on:
-      - comptrends-rabbitmq
-      - comptrends-redis
-      - comptrends-db
-
-  comptrends-flower:
+      - comp-rabbitmq
+      - comp-redis
+      - tasks-db
+  comp-flower:
     build:
       context: .
-      dockerfile: ./compose/local/django/Dockerfile
-    image: comptrends-flower
-    container_name: comptrends-flower
+      dockerfile: ./compose/local/scraper/Dockerfile
+    image: comp-flower
+    container_name: comp-flower
     networks:
-      - comptrends_network
+      - comp-network
     command: /start-flower
     volumes:
-      - ./backend:/backend
+      - ./scraper:/scraper
     env_file:
       - .env-dev
     ports:
       - 5557:5555
     depends_on:
-      - comptrends-rabbitmq
-      - comptrends-redis
-      - comptrends-db
-
-  comptrends-chrome:
+      - comp-rabbitmq
+      - comp-redis
+      - tasks-db
+  comp-chrome:
     image: "selenium/standalone-chrome:latest"
-    container_name: comptrends-chrome
+    container_name: comp-chrome
     environment:
       - SE_VNC_NO_PASSWORD=1
       - SE_NODE_OVERRIDE_MAX_SESSIONS=true
       - SE_NODE_MAX_INSTANCES=12
       - SE_NODE_MAX_SESSIONS=12
     networks:
-      - comptrends_network
-    hostname: comptrends-chrome
+      - comp-network
+    hostname: comp-chrome
     shm_size: '2gb'
     restart: always
     ports:
-      - "4444:4444"
+      - 14444:4444
 
 volumes:
-  comptrends-db-dev:
-  redis-data:
-  comptrends-rabbitmq-data:
-
+  tasks-db-dev:
+  products-db-dev:
+  comp-redis-data:
+  comp-rabbitmq-data:
 
 networks:
-  comptrends_network:
-    name: comptrends_network
+  comp-network:
+    name: comp-network
     driver: bridge
     ipam:
       config:
-        - subnet: 192.168.94.0/24
+        - subnet: 192.168.95.0/24
