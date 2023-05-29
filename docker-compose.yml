@@ -11,15 +11,11 @@ services:
     container_name: comp-scraper
     networks:
       - comp-network
-      # '/start' is the shell script used to run the service
     command: /start
-    # this volume is used to map the files and folders on the host to the container
-    # so if we change code on the host, code in the docker container will also be changed
     volumes:
       - ./scraper:/scraper
     ports:
       - 8010:8000
-    # env_file is used to manage the env variables of our project
     env_file:
       - .env-dev
     depends_on:
@@ -42,7 +38,6 @@ services:
       - ./api:/api
     ports:
       - 8020:8000
-    # env_file is used to manage the env variables of our project
     env_file:
       - .env-dev
     depends_on:
