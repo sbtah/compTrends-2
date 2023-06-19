@@ -115,6 +115,7 @@ class BaseSeleniumScraper:
             # TODO:
             # Call get_random_proxy to use different proxy server on each request..
             # self.options.add_argument('--proxy-server=176.9.220.108:8080')
+            # self.options.add_argument('--proxy-server=socks5://127.0.0.1:9050')
 
             # User Agent
             options.add_argument(f'--user-agent={self.user_agent}')

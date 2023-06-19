@@ -22,10 +22,12 @@ RUN apt-get update \
 # Requirements are installed here to ensure they will be cached.
 COPY ./scraper/requirements.txt /requirements.txt
 COPY ./scraper/requirements.dev.txt /requirements.dev.txt
-RUN pip install -r /requirements.txt && \
-  if [ $DEV = "true" ]; \
-  then pip install -r requirements.dev.txt ; \
-  fi
+
+RUN pip install --upgrade pip && \
+    pip install -r /requirements.txt && \
+    if [ $DEV = "true" ]; \
+    then pip install -r requirements.dev.txt ; \
+    fi
 
 COPY ./compose/local/scraper/entrypoint /entrypoint
 RUN sed -i 's/\r$//g' /entrypoint
@@ -40,10 +42,12 @@ COPY ./compose/local/scraper/celery/worker/start /start-celeryworker
 RUN sed -i 's/\r$//g' /start-celeryworker
 RUN chmod +x /start-celeryworker
 
+# BEAT
 COPY ./compose/local/scraper/celery/beat/start /start-celerybeat
 RUN sed -i 's/\r$//g' /start-celerybeat
 RUN chmod +x /start-celerybeat
 
+# FLOWER
 COPY ./compose/local/scraper/celery/flower/start /start-flower
 RUN sed -i 's/\r$//g' /start-flower
 RUN chmod +x /start-flower

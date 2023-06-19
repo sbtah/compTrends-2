@@ -22,10 +22,12 @@ RUN apt-get update \
 # Requirements are installed here to ensure they will be cached.
 COPY ./api/requirements.txt /requirements.txt
 COPY ./api/requirements.dev.txt /requirements.dev.txt
-RUN pip install -r /requirements.txt && \
-  if [ $DEV = "true" ]; \
-  then pip install -r requirements.dev.txt ; \
-  fi
+
+RUN pip install --upgrade pip && \
+    pip install -r /requirements.txt && \
+    if [ $DEV = "true" ]; \
+    then pip install -r requirements.dev.txt ; \
+    fi
 
 COPY ./compose/local/api/entrypoint /entrypoint
 RUN sed -i 's/\r$//g' /entrypoint
