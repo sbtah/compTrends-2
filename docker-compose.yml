@@ -122,6 +122,7 @@ services:
       - comp-rabbitmq
       - comp-redis
       - tasks-db
+
   comp-flower:
     build:
       context: .
@@ -141,6 +142,7 @@ services:
       - comp-rabbitmq
       - comp-redis
       - tasks-db
+
   comp-chrome:
     image: "selenium/standalone-chrome:latest"
     container_name: comp-chrome
